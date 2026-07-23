@@ -3,7 +3,7 @@ import axios from 'axios';
 
 function Dashboard() {
   const [summary, setSummary] = useState([]);
-  const [liveStats, setLiveStats] = useState(null);
+  const [liveData, setLiveData] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -16,7 +16,7 @@ function Dashboard() {
         setSummary(summaryRes.data.summary);
 
         const liveRes = await axios.get('https://task-tracker-backend-gfw6.onrender.com/dashboard/live', { headers });
-        setLiveStats(liveRes.data);
+        setLiveData(liveRes.data);
 
         setError('');
       } catch (err) {
@@ -44,42 +44,104 @@ function Dashboard() {
     return { text: '💤 لم يبدأ بعد', color: '#9E9E9E' };
   };
 
+  const getPriorityBadge = (priority) => {
+    if (priority === 'high') return { text: 'عالية 🔥', color: '#d9534f', bg: '#fdf2f2' };
+    if (priority === 'medium') return { text: 'متوسطة ⚡', color: '#f0ad4e', bg: '#fdf8f0' };
+    return { text: 'منخفضة ☕', color: '#5bc0de', bg: '#f0f8ff' };
+  };
+
   const totalTasksAllWeeks = summary.reduce((acc, curr) => acc + parseInt(curr.total_tasks || 0), 0);
   const totalCompletedAllWeeks = summary.reduce((acc, curr) => acc + parseInt(curr.completed_tasks || 0), 0);
   const avgCompletionRate = summary.length > 0 
     ? (summary.reduce((acc, curr) => acc + parseFloat(curr.completion_rate || 0), 0) / summary.length).toFixed(1)
     : 0;
 
+  const stats = liveData?.stats;
+  const overdueTasks = liveData?.overdueTasks || [];
+
   return (
     <div>
       <h2 className="page-title">📊 لوحة الإحصائيات</h2>
-      <p className="page-subtitle">أداءك الأسبوعي واللحظي بالأرقام</p>
+      <p className="page-subtitle">أداءك الأسبوعي واللحظي بالأرقام والمهام الفائتة</p>
 
       {error && <p className="status-message error">{error}</p>}
 
-      {/* 🚀 قسم المهام الحالية المباشرة (Live Status) */}
-      {liveStats && (
+      {/* 🚀 قسم الإحصائيات الحية المباشرة */}
+      {stats && (
         <div className="week-card" style={{ backgroundColor: '#fff8f0', border: '1px solid #f0dcc8', marginBottom: '1.5rem' }}>
           <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#d9534f', textAlign: 'center' }}>
-            ⚡ ملخص المهام الحالية (النشطة)
+            ⚡ ملخص المهام الحالية
           </h3>
           <div className="week-stats" style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
             <div style={{ flex: 1 }}>
-              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px' }}>{liveStats.total_active}</strong>
+              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px' }}>{stats.total_active}</strong>
               <span style={{ fontSize: '0.85rem', color: '#666' }}>إجمالي النشطة</span>
             </div>
             <div style={{ flex: 1 }}>
-              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px' }}>{liveStats.completed_active}</strong>
+              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px' }}>{stats.completed_active}</strong>
               <span style={{ fontSize: '0.85rem', color: '#666' }}>المنجزة</span>
             </div>
             <div style={{ flex: 1 }}>
-              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px' }}>{liveStats.pending_active}</strong>
+              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px' }}>{stats.pending_active}</strong>
               <span style={{ fontSize: '0.85rem', color: '#666' }}>معلّقة</span>
             </div>
             <div style={{ flex: 1 }}>
-              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px', color: '#d9534f' }}>{liveStats.high_priority_pending}</strong>
-              <span style={{ fontSize: '0.85rem', color: '#d9534f' }}>عالية الأولوية 🔥</span>
+              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px', color: '#d9534f' }}>{stats.overdue_active}</strong>
+              <span style={{ fontSize: '0.85rem', color: '#d9534f' }}>فات وقتها ❌</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ❌ قائمة المهام الفائتة التي انتهى وقتها ولم تُجز */}
+      {overdueTasks.length > 0 && (
+        <div className="week-card" style={{ backgroundColor: '#fff5f5', border: '1px solid #f5c6cb', marginBottom: '1.5rem' }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: '1.1rem', color: '#a94442', borderBottom: '1px solid #ebccd1', paddingBottom: '8px' }}>
+            ❌ مهام فات وقتها ولم تنجز ({overdueTasks.length})
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {overdueTasks.map((task) => {
+              const pBadge = getPriorityBadge(task.priority);
+              return (
+                <div 
+                  key={task.id} 
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    padding: '10px 14px', 
+                    borderRadius: '8px', 
+                    backgroundColor: '#fff', 
+                    border: '1px solid #f5c6cb' 
+                  }}
+                >
+                  <div>
+                    <h4 style={{ margin: '0 0 4px 0', fontSize: '1rem', color: '#333' }}>
+                      ❌ {task.title}
+                    </h4>
+                    {task.description && <p style={{ margin: 0, fontSize: '0.85rem', color: '#666' }}>{task.description}</p>}
+                    {task.due_date && (
+                      <span style={{ fontSize: '0.75rem', color: '#d9534f', marginTop: '4px', display: 'inline-block', fontWeight: 'bold' }}>
+                        📅 كان موعدها: {task.due_date.split('T')[0]} {task.due_time ? `| ⏰ ${task.due_time}` : ''}
+                      </span>
+                    )}
+                  </div>
+                  <span 
+                    style={{ 
+                      fontSize: '11px', 
+                      padding: '4px 10px', 
+                      borderRadius: '12px', 
+                      backgroundColor: pBadge.color + '22', 
+                      color: pBadge.color, 
+                      fontWeight: 'bold',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {pBadge.text}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -105,10 +167,6 @@ function Dashboard() {
             </div>
           </div>
         </div>
-      )}
-
-      {!error && summary.length === 0 && liveStats?.total_active === 0 && (
-        <p className="empty-note">ما فيه بيانات أو مهام حالية، ابدأ بإضافة مهمة جديدة!</p>
       )}
 
       {/* كروت الأسابيع المؤرشفة */}
@@ -175,4 +233,4 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
+exportDashboard;
