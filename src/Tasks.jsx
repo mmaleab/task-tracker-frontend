@@ -293,14 +293,16 @@ export default function Tasks() {
             return (
               <li key={t.id} className={`ledger-row ${t.is_completed ? 'done' : ''}`}>
                 {/* زر الإكمال Checkmark */}
-                <span
+                {/* زر الإكمال أو علامة الفائتة */}
+                
+                 <span
                   className="ledger-check"
                   onClick={() => handleToggleTask(t)}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', fontSize: expired && !t.is_completed ? '16px' : 'inherit' }}
+                  title={expired && !t.is_completed ? 'انتهى موعد هذه المهمة ولم تنجز' : 'تغيير حالة المهمة'}
                 >
-                  {t.is_completed ? '✓' : '⬜'}
+                  {t.is_completed ? '✓' : (expired ? '❌' : '⬜')}
                 </span>
-
                 {/* محتوى المهمة / وضع التعديل */}
                 {editingId === t.id ? (
                   <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '4px', padding: '0 8px' }}>
