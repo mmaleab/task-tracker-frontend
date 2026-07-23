@@ -12,11 +12,9 @@ function Dashboard() {
         const token = localStorage.getItem('token');
         const headers = { Authorization: `Bearer ${token}` };
 
-        // 1. جلب بيانات الأرشيف (التقارير السابقة)
         const summaryRes = await axios.get('https://task-tracker-backend-gfw6.onrender.com/dashboard/summary', { headers });
         setSummary(summaryRes.data.summary);
 
-        // 2. جلب بيانات المهام الحالية المباشرة (Live Stats)
         const liveRes = await axios.get('https://task-tracker-backend-gfw6.onrender.com/dashboard/live', { headers });
         setLiveStats(liveRes.data);
 
@@ -62,25 +60,25 @@ function Dashboard() {
       {/* 🚀 قسم المهام الحالية المباشرة (Live Status) */}
       {liveStats && (
         <div className="week-card" style={{ backgroundColor: '#fff8f0', border: '1px solid #f0dcc8', marginBottom: '1.5rem' }}>
-          <h3 style={{ margin: '0 0 12px 0', fontSize: '1.1rem', color: '#d9534f', textAlign: 'center' }}>
+          <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#d9534f', textAlign: 'center' }}>
             ⚡ ملخص المهام الحالية (النشطة)
           </h3>
-          <div className="week-stats">
-            <div>
-              <strong>{liveStats.total_active}</strong>
-              إجمالي النشطة
+          <div className="week-stats" style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+            <div style={{ flex: 1 }}>
+              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px' }}>{liveStats.total_active}</strong>
+              <span style={{ fontSize: '0.85rem', color: '#666' }}>إجمالي النشطة</span>
             </div>
-            <div>
-              <strong>{liveStats.completed_active}</strong>
-              المنجزة حالياً
+            <div style={{ flex: 1 }}>
+              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px' }}>{liveStats.completed_active}</strong>
+              <span style={{ fontSize: '0.85rem', color: '#666' }}>المنجزة</span>
             </div>
-            <div>
-              <strong>{liveStats.pending_active}</strong>
-              معلّقة لم تنجز
+            <div style={{ flex: 1 }}>
+              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px' }}>{liveStats.pending_active}</strong>
+              <span style={{ fontSize: '0.85rem', color: '#666' }}>معلّقة</span>
             </div>
-            <div>
-              <strong style={{ color: '#d9534f' }}>{liveStats.high_priority_pending}</strong>
-              عالية الأولوية (معلقة) 🔥
+            <div style={{ flex: 1 }}>
+              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px', color: '#d9534f' }}>{liveStats.high_priority_pending}</strong>
+              <span style={{ fontSize: '0.85rem', color: '#d9534f' }}>عالية الأولوية 🔥</span>
             </div>
           </div>
         </div>
@@ -92,18 +90,18 @@ function Dashboard() {
           <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#4a3b32', textAlign: 'center' }}>
             🏆 الإنجاز التراكمي العام (الأرشيف)
           </h3>
-          <div className="week-stats">
-            <div>
-              <strong>{totalTasksAllWeeks}</strong>
-              إجمالي المهام
+          <div className="week-stats" style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+            <div style={{ flex: 1 }}>
+              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px' }}>{totalTasksAllWeeks}</strong>
+              <span style={{ fontSize: '0.85rem', color: '#666' }}>إجمالي المهام</span>
             </div>
-            <div>
-              <strong>{totalCompletedAllWeeks}</strong>
-              المنجزة كلياً
+            <div style={{ flex: 1 }}>
+              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px' }}>{totalCompletedAllWeeks}</strong>
+              <span style={{ fontSize: '0.85rem', color: '#666' }}>الممنجزة كلياً</span>
             </div>
-            <div>
-              <strong>{avgCompletionRate}%</strong>
-              متوسط الإنجاز
+            <div style={{ flex: 1 }}>
+              <strong style={{ display: 'block', fontSize: '1.2rem', marginBottom: '4px' }}>{avgCompletionRate}%</strong>
+              <span style={{ fontSize: '0.85rem', color: '#666' }}>متوسط الإنجاز</span>
             </div>
           </div>
         </div>
