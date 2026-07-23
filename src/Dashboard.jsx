@@ -3,22 +3,31 @@ import axios from 'axios';
 
 function Dashboard() {
   const [summary, setSummary] = useState([]);
+  const [liveStats, setLiveStats] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchSummary = async () => {
+    const fetchDashboardData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:3000/dashboard/summary', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setSummary(response.data.summary);
+        const headers = { Authorization: `Bearer ${token}` };
+
+        // 1. جلب بيانات الأرشيف (التقارير السابقة)
+        const summaryRes = await axios.get('https://task-tracker-backend-gfw6.onrender.com/dashboard/summary', { headers });
+        setSummary(summaryRes.data.summary);
+
+        // 2. جلب بيانات المهام الحالية المباشرة (Live Stats)
+        const liveRes = await axios.get('https://task-tracker-backend-gfw6.onrender.com/dashboard/live', { headers });
+        setLiveStats(liveRes.data);
+
+        setError('');
       } catch (err) {
+        console.error(err);
         setError('فشل تحميل بيانات الداشبورد');
       }
     };
 
-    fetchSummary();
+    fetchDashboardData();
   }, []);
 
   const getProgressColor = (rate) => {
@@ -46,19 +55,42 @@ function Dashboard() {
   return (
     <div>
       <h2 className="page-title">📊 لوحة الإحصائيات</h2>
-      <p className="page-subtitle">أداءك الأسبوعي بالأرقام</p>
+      <p className="page-subtitle">أداءك الأسبوعي واللحظي بالأرقام</p>
 
       {error && <p className="status-message error">{error}</p>}
 
-      {!error && summary.length === 0 && (
-        <p className="empty-note">ما فيه بيانات أرشيف بعد، أرشف أسبوعك الأول من صفحة المهام</p>
+      {/* 🚀 قسم المهام الحالية المباشرة (Live Status) */}
+      {liveStats && (
+        <div className="week-card" style={{ backgroundColor: '#fff8f0', border: '1px solid #f0dcc8', marginBottom: '1.5rem' }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: '1.1rem', color: '#d9534f', textAlign: 'center' }}>
+            ⚡ ملخص المهام الحالية (النشطة)
+          </h3>
+          <div className="week-stats">
+            <div>
+              <strong>{liveStats.total_active}</strong>
+              إجمالي النشطة
+            </div>
+            <div>
+              <strong>{liveStats.completed_active}</strong>
+              المنجزة حالياً
+            </div>
+            <div>
+              <strong>{liveStats.pending_active}</strong>
+              معلّقة لم تنجز
+            </div>
+            <div>
+              <strong style={{ color: '#d9534f' }}>{liveStats.high_priority_pending}</strong>
+              عالية الأولوية (معلقة) 🔥
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* كارت الملخص العام التراكمي */}
+      {/* كارت الملخص العام التراكمي للأرشيف */}
       {summary.length > 0 && (
         <div className="week-card" style={{ backgroundColor: '#fdfbf7', border: '1px solid #e2d9cc', marginBottom: '1.5rem' }}>
           <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#4a3b32', textAlign: 'center' }}>
-            🏆 الإنجاز التراكمي العام
+            🏆 الإنجاز التراكمي العام (الأرشيف)
           </h3>
           <div className="week-stats">
             <div>
@@ -77,6 +109,10 @@ function Dashboard() {
         </div>
       )}
 
+      {!error && summary.length === 0 && liveStats?.total_active === 0 && (
+        <p className="empty-note">ما فيه بيانات أو مهام حالية، ابدأ بإضافة مهمة جديدة!</p>
+      )}
+
       {/* كروت الأسابيع المؤرشفة */}
       {summary.map((week) => {
         const badge = getPerformanceBadge(week.completion_rate);
@@ -84,7 +120,6 @@ function Dashboard() {
 
         return (
           <div key={week.week_start_date} className="week-card">
-            {/* الهيدر العلوي للكارت يحتوي على التاريخ والشارة بدون تداخل */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <p className="week-date" style={{ margin: 0 }}>
                 أسبوع {week.week_start_date.split('T')[0]}
@@ -124,7 +159,6 @@ function Dashboard() {
               </div>
             </div>
 
-            {/* شريط التقدم الملون */}
             <div className="progress-track" style={{ backgroundColor: '#eee', height: '10px', borderRadius: '5px', overflow: 'hidden', marginTop: '10px' }}>
               <div
                 className="progress-fill"

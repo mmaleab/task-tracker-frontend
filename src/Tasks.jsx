@@ -6,6 +6,7 @@ export default function Tasks() {
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [dueTime, setDueTime] = useState('');
+  const [priority, setPriority] = useState('medium'); // الحالة الافتراضية للأولوية
   const [message, setMessage] = useState('');
 
   // حالات التعديل (Editing)
@@ -13,6 +14,7 @@ export default function Tasks() {
   const [editTitle, setEditTitle] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editTime, setEditTime] = useState('');
+  const [editPriority, setEditPriority] = useState('medium');
 
   // دالة جلب تاريخ اليوم المحلي بصيغة YYYY-MM-DD
   const getLocalDateStr = () => {
@@ -25,7 +27,7 @@ export default function Tasks() {
 
   const todayDateStr = getLocalDateStr();
 
-  // دالة تحويل تاريخ الباك إيند (ISO) إلى تاريخ محلي YYYY-MM-DD بدون تأثر بفارق التوقيت (Timezone Shift)
+  // دالة تحويل تاريخ الباك إيند (ISO) إلى تاريخ محلي YYYY-MM-DD بدون تأثر بفارق التوقيت
   const formatLocalDate = (isoDateStr) => {
     if (!isoDateStr) return '';
     const dateObj = new Date(isoDateStr);
@@ -55,7 +57,6 @@ export default function Tasks() {
     if (!taskDate) return false;
     
     const now = new Date();
-    // استخدام التاريخ المحلي المنسق بدلاً من split المباشر لتفادي الـ UTC Bug
     const cleanDateStr = formatLocalDate(taskDate);
 
     const taskDateTimeStr = taskTime 
@@ -66,10 +67,22 @@ export default function Tasks() {
     return now >= taskDateTime;
   };
 
+  // دالة مساعدة لترجمة الأولوية وشكلها المرئي
+  const getPriorityBadge = (p) => {
+    switch (p) {
+      case 'high':
+        return <span style={{ color: '#d9534f', fontWeight: 'bold', fontSize: '11px' }}>🔥 عالية</span>;
+      case 'low':
+        return <span style={{ color: '#5cb85c', fontSize: '11px' }}>🟢 منخفضة</span>;
+      default:
+        return <span style={{ color: '#f0ad4e', fontSize: '11px' }}>🟡 متوسطة</span>;
+    }
+  };
+
   // 1. جلب المهام
   const fetchTasks = async () => {
     try {
-      const res = await axios.get('http://localhost:3000/tasks', getAuthHeader());
+      const res = await axios.get('https://task-tracker-backend-gfw6.onrender.com/tasks', getAuthHeader());
       setTasks(res.data);
       setMessage('');
     } catch (err) {
@@ -89,7 +102,6 @@ export default function Tasks() {
     e.preventDefault();
     if (!title.trim()) return;
 
-    // فحص لو المستخدم حاول يدخل وقت قديم اليوم
     if (dueDate && dueTime) {
       const selected = new Date(`${dueDate}T${dueTime}`);
       if (selected < new Date()) {
@@ -100,17 +112,19 @@ export default function Tasks() {
 
     try {
       await axios.post(
-        'http://localhost:3000/tasks',
+        'https://task-tracker-backend-gfw6.onrender.com/tasks',
         { 
           title, 
           due_date: dueDate || null, 
-          due_time: dueTime || null 
+          due_time: dueTime || null,
+          priority: priority || 'medium'
         },
         getAuthHeader()
       );
       setTitle('');
       setDueDate('');
       setDueTime('');
+      setPriority('medium');
       setMessage('');
       fetchTasks();
     } catch (err) {
@@ -122,12 +136,13 @@ export default function Tasks() {
   const handleToggleTask = async (task) => {
     try {
       await axios.put(
-        `http://localhost:3000/tasks/${task.id}`,
+        `https://task-tracker-backend-gfw6.onrender.com/tasks/${task.id}`,
         { 
           title: task.title,
           description: task.description,
           due_date: task.due_date,
           due_time: task.due_time,
+          priority: task.priority,
           is_completed: !task.is_completed 
         },
         getAuthHeader()
@@ -138,7 +153,7 @@ export default function Tasks() {
     }
   };
 
-  // 4. بدء وضع التعديل (فقط للمهام التي لم ينته وقتها بعد)
+  // 4. بدء وضع التعديل
   const startEditing = (task) => {
     if (isTaskExpired(task.due_date, task.due_time)) {
       setMessage('لا يمكنك تعديل هذه المهمة لأن وقتها قد حان بالفعل!');
@@ -148,11 +163,11 @@ export default function Tasks() {
     setEditTitle(task.title);
     setEditDate(task.due_date ? formatLocalDate(task.due_date) : '');
     setEditTime(task.due_time ? task.due_time.substring(0, 5) : '');
+    setEditPriority(task.priority || 'medium');
   };
 
   // 5. حفظ التعديل
   const handleSaveEdit = async (task) => {
-    // تحقق أن التعديل الجديد ليس في الماضي
     if (editDate && editTime) {
       const newSelected = new Date(`${editDate}T${editTime}`);
       if (newSelected < new Date()) {
@@ -163,12 +178,13 @@ export default function Tasks() {
 
     try {
       await axios.put(
-        `http://localhost:3000/tasks/${task.id}`,
+        `https://task-tracker-backend-gfw6.onrender.com/tasks/${task.id}`,
         {
           title: editTitle,
           description: task.description,
           due_date: editDate || null,
           due_time: editTime || null,
+          priority: editPriority,
           is_completed: task.is_completed
         },
         getAuthHeader()
@@ -188,7 +204,7 @@ export default function Tasks() {
   // 6. حذف مهمة
   const handleDeleteTask = async (id) => {
     try {
-      await axios.delete(`http://localhost:3000/tasks/${id}`, getAuthHeader());
+      await axios.delete(`https://task-tracker-backend-gfw6.onrender.com/tasks/${id}`, getAuthHeader());
       fetchTasks();
     } catch (err) {
       console.error(err);
@@ -199,7 +215,7 @@ export default function Tasks() {
   const handleArchive = async () => {
     try {
       const res = await axios.post(
-        'http://localhost:3000/tasks/archive',
+        'https://task-tracker-backend-gfw6.onrender.com/tasks/archive',
         { week_start_date: todayDateStr },
         getAuthHeader()
       );
@@ -240,6 +256,20 @@ export default function Tasks() {
             onChange={(e) => setDueTime(e.target.value)}
             style={{ flex: 1, padding: '8px' }}
           />
+        </div>
+
+        {/* حقل اختيار الأولوية */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+          <label style={{ fontSize: '13px', color: '#555' }}>الأولوية:</label>
+          <select 
+            value={priority} 
+            onChange={(e) => setPriority(e.target.value)}
+            style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+          >
+            <option value="high">🔥 عالية (High)</option>
+            <option value="medium">🟡 متوسطة (Medium)</option>
+            <option value="low">🟢 منخفضة (Low)</option>
+          </select>
         </div>
 
         <button type="submit" className="btn btn-primary">
@@ -286,15 +316,25 @@ export default function Tasks() {
                         min={todayDateStr}
                         value={editDate}
                         onChange={(e) => setEditDate(e.target.value)}
-                        style={{ padding: '4px', fontSize: '12px' }}
+                        style={{ padding: '4px', fontSize: '12px', flex: 1 }}
                       />
                       <input
                         type="time"
                         value={editTime}
                         onChange={(e) => setEditTime(e.target.value)}
-                        style={{ padding: '4px', fontSize: '12px' }}
+                        style={{ padding: '4px', fontSize: '12px', flex: 1 }}
                       />
                     </div>
+                    {/* تعديل الأولوية */}
+                    <select
+                      value={editPriority}
+                      onChange={(e) => setEditPriority(e.target.value)}
+                      style={{ padding: '4px', fontSize: '12px' }}
+                    >
+                      <option value="high">🔥 عالية</option>
+                      <option value="medium">🟡 متوسطة</option>
+                      <option value="low">🟢 منخفضة</option>
+                    </select>
                   </div>
                 ) : (
                   <div 
@@ -302,7 +342,10 @@ export default function Tasks() {
                     onClick={() => handleToggleTask(t)} 
                     style={{ flexGrow: 1, cursor: 'pointer' }}
                   >
-                    <div>{t.title}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>{t.title}</span>
+                      {getPriorityBadge(t.priority)}
+                    </div>
                     {(t.due_date || t.due_time) && (
                       <div style={{ fontSize: '11px', color: expired ? '#d9534f' : '#777', marginTop: '2px' }}>
                         {t.due_date && `📅 ${formatLocalDate(t.due_date)} `}
