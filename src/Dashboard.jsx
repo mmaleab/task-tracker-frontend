@@ -233,4 +233,4 @@ function Dashboard() {
   );
 }
 
-exportDashboard;
+export default Dashboard;;
